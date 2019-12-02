@@ -19,23 +19,41 @@ let run (code: IntCode) =
         code.[code.[pc + 3]] <- result
         pc <- pc + 4
 
+let runWith (code: IntCode) noun verb =
+    code.[1] <- noun
+    code.[2] <- verb
+    run code
+
+let findNounAndVerb (code: IntCode) expectedOutput =
+    let mutable result = None
+    for noun in 0..99 do
+        for verb in 0..99 do
+            let code = Array.copy code
+            runWith code noun verb
+            if code.[0] = expectedOutput then
+                result <- Some((noun,verb))
+    result
+
 let loadIntCode filePath: IntCode =
     (File.ReadAllText filePath).Split(',')
     |> Array.map Int32.Parse
    
 [<EntryPoint>]
 let main argv =
-
+    // Part 1
     let intCode = loadIntCode "Input.txt"
 
-    // restore 1202 program state
-    intCode.[1] <- 12
-    intCode.[2] <- 2
+    runWith intCode 12 2
 
-    run intCode |> ignore
-    
-    let result = intCode.[0]
+    printfn "Value at position 0: %A" intCode.[0]
 
-    printfn "Value at position 0: %A" result
-    
+    // Part 2
+    let intCode = loadIntCode "Input.txt"
+
+    let nounAndVerb =
+        findNounAndVerb intCode 19690720
+        |> Option.map (fun x -> sprintf "%02i%02i" (fst x) (snd x))
+
+    printfn "Noun and verb: %A" nounAndVerb
+
     0
