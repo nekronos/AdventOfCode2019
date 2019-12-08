@@ -12,6 +12,10 @@ type Opcode =
     | Multiply
     | Read
     | Write
+    | JumpIfTrue
+    | JumpIfFalse
+    | LessThan
+    | Equals
     | Halt
 
 type ParameterMode =
@@ -42,6 +46,10 @@ let getPcIncrement opcode =
     | Multiply -> 4
     | Read -> 2
     | Write -> 2
+    | JumpIfTrue -> 3
+    | JumpIfFalse -> 3
+    | LessThan -> 4
+    | Equals -> 4
     | Halt -> 0
 
 let split digit =
@@ -65,6 +73,10 @@ let decode instr =
         | 2 -> Multiply
         | 3 -> Read
         | 4 -> Write
+        | 5 -> JumpIfTrue
+        | 6 -> JumpIfFalse
+        | 7 -> LessThan
+        | 8 -> Equals
         | 99 -> Halt
         | _ -> raise (InvalidInstruction(opcodeInt))
     let instruction = {
@@ -99,6 +111,8 @@ let run (code: IntCode) =
     while not halt do
         let i = decode code.[pc]
 
+        let mutable incrementPc = true
+
         let read = read code pc
         let write = write code pc
 
@@ -124,16 +138,49 @@ let run (code: IntCode) =
             let output = read i.p1
             printf "%A" output
 
+        | JumpIfTrue ->
+            let x = read i.p1
+            if x <> 0 then
+                pc <- (read i.p2)
+                incrementPc <- false
+
+        | JumpIfFalse ->
+            let x = read i.p1
+            if x = 0 then
+                pc <- (read i.p2)
+                incrementPc <- false
+
+        | LessThan ->
+            let a = read i.p1
+            let b = read i.p2
+            let c =
+                if a < b then
+                    1
+                else
+                    0
+            write i.p3 c
+
+        | Equals ->
+            let a = read i.p1
+            let b = read i.p2
+            let c =
+                if a = b then
+                    1
+                else
+                    0
+            write i.p3 c
+
         | Halt -> halt <- true
 
-        pc <- pc + (getPcIncrement i.opcode)
+        if incrementPc then
+            pc <- pc + (getPcIncrement i.opcode)
+
     done
     
 [<EntryPoint>]
 let main argv =
-
     let intCode = loadIntCode "Input.txt"
 
     run intCode |> ignore
-    
+
     0
